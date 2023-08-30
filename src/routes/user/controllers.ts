@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { BodyResponse } from "../../interfaces/body-response";
 import { CustomError } from "../../models/custom-errors";
+import firebaseApp from "../../helpers/firebase";
 import UserModel from "../../models/user";
 import { UserData } from "./types";
 
@@ -30,8 +31,13 @@ const createUser = async (
       );
     }
 
+    const newFirebaseUser = await firebaseApp.auth().createUser({
+      email: req.body.email,
+    });
+
     const newUser = new UserModel({
       ...req.body,
+      firebaseUid: newFirebaseUser?.uid,
     });
 
     const successData = await newUser.save();
