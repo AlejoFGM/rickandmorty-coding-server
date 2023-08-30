@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { BodyResponse } from "../../interfaces/body-response";
-import { CustomError } from "../../models/custom-errors";
 import firebaseApp from "../../helpers/firebase";
 import UserModel from "../../models/user";
 import { UserData } from "./types";
@@ -25,18 +24,20 @@ const createUser = async (
   try {
     const isUsed = await UserModel.findOne({ email: req.body.email });
     if (isUsed) {
-      throw new CustomError(
-        400,
+      console.log(isUsed);
+      throw new Error(
         `User with email ${req.body.email} is already registered.`
       );
     }
 
     const newFirebaseUser = await firebaseApp.auth().createUser({
       email: req.body.email,
+      password: req.body.password,
     });
 
     const newUser = new UserModel({
-      ...req.body,
+      nickname: req.body.nickname,
+      email: req.body.email,
       firebaseUid: newFirebaseUser?.uid,
     });
 
@@ -48,11 +49,63 @@ const createUser = async (
       error: false,
     });
   } catch (error: any) {
-    throw new CustomError(500, error.message);
+    return res.status(500).json({
+      message: `Server error: ${error}`,
+      data: undefined,
+      error: true,
+    });
+  }
+};
+
+const addFavoriteCharacter = async (
+  req: Request,
+  res: Response<BodyResponse<UserData>>
+) => {
+  try {
+    const userById = await UserModel.findOne({ _id: req.params.id });
+
+    if (!userById) {
+      throw new Error(`No user found with ID ${req.params.id}.`);
+    }
+
+    if (req.body.isToAdd) {
+      const response = await UserModel.findOneAndUpdate(
+        { _id: req.params.id },
+        { $push: { favoriteCharacters: req.body.favoriteCharacter } },
+        {
+          new: true,
+        }
+      );
+
+      return res.status(200).json({
+        message: "Favorite Character added successfully.",
+        data: response || ({} as UserData),
+        error: false,
+      });
+    } else {
+      const response = await UserModel.findOneAndUpdate(
+        { _id: req.body.userId },
+        { $pull: { favoriteCharacters: req.body.characterId } },
+        { new: true }
+      );
+
+      return res.status(200).json({
+        message: "Favorite character deleted successfully",
+        data: response || ({} as UserData),
+        error: false,
+      });
+    }
+  } catch (error: any) {
+    return res.status(500).json({
+      message: `Server error: ${error}`,
+      data: undefined,
+      error: true,
+    });
   }
 };
 
 export default {
   getAllUsers,
   createUser,
+  addFavoriteCharacter,
 };
