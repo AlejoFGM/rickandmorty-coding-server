@@ -84,8 +84,8 @@ const addFavoriteCharacter = async (
       });
     } else {
       const response = await UserModel.findOneAndUpdate(
-        { _id: req.body.userId },
-        { $pull: { favoriteCharacters: req.body.characterId } },
+        { _id: req.params.id },
+        { $pull: { favoriteCharacters: req.body.favoriteCharacter } },
         { new: true }
       );
 
