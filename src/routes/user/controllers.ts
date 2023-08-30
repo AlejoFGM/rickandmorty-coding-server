@@ -68,33 +68,28 @@ const addFavoriteCharacter = async (
       throw new Error(`No user found with ID ${req.params.id}.`);
     }
 
-    if (req.body.isToAdd) {
-      const response = await UserModel.findOneAndUpdate(
-        { _id: req.params.id },
-        { $push: { favoriteCharacters: req.body.favoriteCharacter } },
-        {
-          new: true,
-        }
-      );
+    const characterFound = userById.favoriteCharacters?.some(
+      (id) => id === req.body.favoriteCharacter
+    );
 
-      return res.status(200).json({
-        message: "Favorite Character added successfully.",
-        data: response || ({} as UserData),
-        error: false,
-      });
-    } else {
-      const response = await UserModel.findOneAndUpdate(
-        { _id: req.params.id },
-        { $pull: { favoriteCharacters: req.body.favoriteCharacter } },
-        { new: true }
-      );
-
-      return res.status(200).json({
-        message: "Favorite character deleted successfully",
-        data: response || ({} as UserData),
-        error: false,
-      });
-    }
+    const response = await UserModel.findOneAndUpdate(
+      { _id: req.params.id },
+      {
+        [characterFound ? "$pull" : "$push"]: {
+          favoriteCharacters: req.body.favoriteCharacter,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+    return res.status(200).json({
+      message: `Favorite character ${
+        characterFound ? "deleted" : "added"
+      } successfully`,
+      data: response || ({} as UserData),
+      error: false,
+    });
   } catch (error: any) {
     return res.status(500).json({
       message: `Server error: ${error}`,

@@ -3,5 +3,5 @@ export interface UserData {
   firebaseUid?: string;
   nickname: string;
   email: string;
-  favoriteCharacters: string[];
+  favoriteCharacters?: string[];
 }
